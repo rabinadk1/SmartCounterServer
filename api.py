@@ -9,7 +9,7 @@ socketio = SocketIO(app)
 filename = "buses.json"
 with open(filename, 'r') as outfile:
     data = json.loads(outfile.read())  # converts json to dict
-    
+
 def notfound(errortype="busid not found"):
     return jsonify(message="failure", info=errortype)
 
@@ -87,4 +87,4 @@ def BusInfo(info):
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=True)
+    app.run( debug=True)
