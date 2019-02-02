@@ -1,93 +1,127 @@
-import os
 import json
-from flask import jsonify, request, Flask
-from flask_socketio import SocketIO, emit
+from create import *
+from flask import jsonify, request, session
+from flask_session import Session
+from werkzeug.security import generate_password_hash, check_password_hash
 
-app = Flask(__name__)
-# app.config["DEBUG"] = False
-socketio = SocketIO(app)
+# from flask_socketio import SocketIO, emit
+
+# Configure session to use file system
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+# socketio = SocketIO(app)
+Session(app)
 
 filename = "buses.json"
 with open(filename, 'r') as outfile:
     data = json.loads(outfile.read())  # converts json to dict
 
-def notfound(errortype="busid not found"):
-    return jsonify(message="failure", info=errortype)
+# def notfound(errortype="busid not found"):
+#     return jsonify(message="failure", info=errortype)
 
 
 @app.route('/api', methods=['GET'])
-def allData():
-    if 'busid' in request.args:
-        busid = int(request.args['busid'])
-        return jsonify(data["Counter1"][busid])
+def api():
+    # if 'busid' in request.args:
+    #     busid = int(request.args['busid'])
+    #     return jsonify(data["Counter1"][busid])
     return jsonify(data)
 
 
-@app.route('/api/UpdateSeat', methods=['GET'])
-def check():
-    if not request.args:
-        return notfound("Arguments not found")
-    if 'busid' not in request.args or 'seatid' not in request.args:
-        return notfound("busid or seatid not found")
-    busid = int(request.args['busid'])
-    seatid = int(request.args['seatid'])
-    changed = False
-
-    if 'isPacked' in request.args:
-        isPacked = int(request.args['isPacked'])
-        data['Counter1'][busid]['Seats'][seatid]['isPacked'] = isPacked
-        changed = True
-
-    if 'fn' in request.args:
-        fn = request.args['fn']
-        data['Counter1'][busid]['Seats'][seatid]['fn'] = fn
-        changed = True
-
-    if 'ln' in request.args:
-        ln = request.args['ln']
-        data['Counter1'][busid]['Seats'][seatid]['ln'] = ln
-        changed = True
-
-    if 'contact' in request.args:
-        contact = int(request.args['contact'])
-        data['Counter1'][busid]['Seats'][seatid]['contact'] = contact
-        changed = True
-
-    if changed:
-        with open(filename, 'w') as outfile:
-            json.dump(data, outfile)
-        return jsonify(message="success", info="Updated successfully")
-
-    return jsonify(message="failure", info="parameters other than busid and seatid needed")
+@app.route('/login', methods=['POST'])
+def login():
+    if not request.is_json:
+        return "JSON not found!!"
+    username = request.json.get("username", None)
+    if username is None:
+        return "error"
+    userinfo = Users.query.filter_by(username=username).one_or_none()
+    if userinfo is None:
+        return "User not registered"
+    password = request.json.get("password", None)
+    if check_password_hash(userinfo.password, password):
+        return "Password doesn't match"
+    session["username"] = username
+    return "Logged in successfully!!"
 
 
-@socketio.on("update json")
-def updatejson():
-    emit("download json", broadcast=True)
+@app.route('/register', methods=['POST'])
+def register():
+    if "username" not in session:
+        if not request.is_json:
+            return "JSON not found!"
+        username = request.json.get("username", None)
+        if username is None:
+            return "error"
+        if Users.query.filter_by(username=username).count():
+            return "Username already exists"
+        password = generate_password_hash(request.json.get("password"))
+        counter = request.json.get("counter")
+        email = request.json.get("email")
+        user = Users(username=username, password=password, counter=counter, email=email)
+        db.session.add(user)
+        db.session.commit()
+    return "Success!!"
 
 
-@app.route('/api/CustomerInfo', methods=['GET'])
-def CustomerInfo():
-    if 'busid' not in request.args or 'seatid' not in request.args:
-        return notfound("busid or seatid not found")
+@app.route('/logout')
+def logout():
+    try:
+        session.pop("username")
+    except KeyError:
+        return "Not logged it yet!"
+    finally:
+        return "Successfully logged in!"
 
-    busid = int(request.args['busid'])
-    seatid = int(request.args['seatid'])
-    return jsonify(data['Counter1'][busid]['Seats'][seatid])
+
+@app.route('/api/UpdateSeat', methods=['POST'])
+def updateseat():
+    if "username" not in session:
+        return "Please login first"
+    if not request.is_json:
+        return "JSON not found!!"
+    busid = int(request.json.get("busid"))
+    customername = request.json.get("CustomerName", None)
+    contact = request.json.get("Contact", None)
+    seats = request.json.get("seats", None)
+    if customername is None or seats is None:
+        return "Customer name or seats are not specified"
+    for seatid in seats:
+        seat = data['Counter1'][busid]['Seats'][seatid]
+        seat.CustomerName = customername
+        seat.Contact = contact
+        seat.isPacked = True
+    with open('buses.json', 'w') as outfile:
+        json.dump(data, outfile)
 
 
-@app.route('/api/<info>', methods=['GET'])
-def BusInfo(info):
-    if 'busid' not in request.args:
-        return notfound()
-    busid = int(request.args['busid'])
-    submit = data['Counter1'][busid]
-    if info not in submit:
-        return notfound("%s parameter not found" % info)
-    return jsonify(submit[info])
+# @socketio.on("update json")
+# def updatejson():
+#     emit("download json", broadcast=True)
+
+
+# @app.route('/api/CustomerInfo', methods=['GET'])
+# def customerinfo():
+#     if 'busid' not in request.args or 'seatid' not in request.args:
+#         return notfound("busid or seatid not found")
+#
+#     busid = int(request.args['busid'])
+#     seatid = int(request.args['seatid'])
+#     return jsonify(data['Counter1'][busid]['Seats'][seatid])
+#
+#
+# @app.route('/api/<info>', methods=['GET'])
+# def businfo(info):
+#     if 'busid' not in request.args:
+#         return notfound()
+#     busid = int(request.args['busid'])
+#     submit = data['Counter1'][busid]
+#     if info not in submit:
+#         return notfound("%s parameter not found" % info)
+#     return jsonify(submit[info])
 
 
 if __name__ == "__main__":
     # Bind to PORT if defined, otherwise default to 5000.
-    port = int(os.environ.get('PORT',5000))
+    port = int(environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
