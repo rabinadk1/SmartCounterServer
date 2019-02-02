@@ -19,6 +19,8 @@ with open(filename, 'r') as outfile:
 # def notfound(errortype="busid not found"):
 #     return jsonify(message="failure", info=errortype)
 
+def errormessage(info="Error occurred!!"):
+    return jsonify(message="failure", info=info)
 
 @app.route('/api', methods=['GET'])
 def api():
@@ -56,9 +58,9 @@ def register():
         if Users.query.filter_by(username=username).count():
             return "Username already exists"
         password = generate_password_hash(request.json.get("password"))
-        counter = request.json.get("counter")
+        counterid = request.json.get("counterid")
         email = request.json.get("email")
-        user = Users(username=username, password=password, counter=counter, email=email)
+        user = Users(username=username, password=password, counterid=counterid, email=email)
         db.session.add(user)
         db.session.commit()
     return "Success!!"
@@ -74,18 +76,18 @@ def logout():
         return "Successfully logged in!"
 
 
-@app.route('/api/UpdateSeat', methods=['POST'])
+@app.route('/api/updateseat', methods=['POST'])
 def updateseat():
-    if "username" not in session:
-        return "Please login first"
+#    if "username" not in session:
+#        return "Please login first"
     if not request.is_json:
-        return "JSON not found!!"
-    busid = int(request.json.get("busid"))
+        return jsonify(message="failure", info="The requested method is not of JSON type.")
+    busid = int(request.json.get("BusId"))
     customername = request.json.get("CustomerName", None)
     contact = request.json.get("Contact", None)
-    seats = request.json.get("seats", None)
-    if customername is None or seats is None:
-        return "Customer name or seats are not specified"
+    seats = request.json.get("Seats", None)
+    if customername is None or seats is None or contact is None :
+        return errormessage("Incomplete info provided!")
     for seatid in seats:
         seat = data['Counter1'][busid]['Seats'][seatid]
         seat.CustomerName = customername
@@ -93,7 +95,7 @@ def updateseat():
         seat.isPacked = True
     with open('buses.json', 'w') as outfile:
         json.dump(data, outfile)
-
+    return jsonify(mesasge="success", info="Data updated successfully")
 
 # @socketio.on("update json")
 # def updatejson():
