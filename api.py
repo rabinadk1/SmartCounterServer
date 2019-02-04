@@ -23,6 +23,7 @@ with open(filename, 'r') as outfile:
 def errormessage(info="Error occurred!!"):
     return jsonify(message="failure", info=info)
 
+
 def successmessage(info="Successfully done!!"):
     return jsonify(message="success", info=info)
 
@@ -37,7 +38,7 @@ def api():
 
 @app.route('/login', methods=['POST'])
 def login():
-    if username not in session:
+    if "username" not in session:
         if not request.is_json:
             return errormessage("JSON not found!!")
         username = request.json.get("username", None)
@@ -101,6 +102,10 @@ def updateseat():
         seat.isPacked = True
     with open('buses.json', 'w') as outfile:
         json.dump(data, outfile)
+    ''' The following code works fluently in database but database migration is remaining so commented out!!'''
+    # customer = CustomerInfo(name=customername, contact=contact, seats=seats, busid=busid)
+    # db.session.add(customer)
+    # db.session.commit()
     return jsonify(mesasge="success", info="Data updated successfully")
 
 

@@ -1,4 +1,5 @@
 import requests
 
-r = requests.post('http://localhost:5000/register', json={'username': 'suke', 'email':'rabin.adk1@gmail.com', 'password':'testing', 'counterid':1})
-# r = requests.get('http://localhost:5000/api')
+r = requests.post("http://localhost:5000/api/updateseat",
+                  json={"CustomerName": "Suke", "Contact": 9880112342, "Seats": ["a2", "a3"], "BusId": 2})
+# r = requests.get("http://localhost:5000/api")
