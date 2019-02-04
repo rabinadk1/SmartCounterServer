@@ -16,6 +16,8 @@ filename = "buses.json"
 with open(filename, 'r') as outfile:
     data = json.loads(outfile.read())  # converts json to dict
 
+session = {}
+
 
 # def notfound(errortype="busid not found"):
 #     return jsonify(message="failure", info=errortype)
@@ -41,16 +43,18 @@ def login():
     if "username" not in session:
         if not request.is_json:
             return errormessage("JSON not found!!")
-        username = request.json.get("username", None)
+        username = request.json.get("Username", None)
         if username is None:
             return errormessage("Username not provided!")
         userinfo = Users.query.filter_by(username=username).one_or_none()
         if userinfo is None:
             return errormessage("User not registered")
-        password = request.json.get("password", None)
-        if check_password_hash(userinfo.password, password):
+        password = request.json.get("Password", None)
+        if not check_password_hash(userinfo.password, password):
             return errormessage("Password doesn't match")
         session["username"] = username
+        session["counterid"] = userinfo.counterid
+        print("K xa topper?")
     return successmessage("Logged in successfully!!")
 
 
@@ -59,15 +63,15 @@ def register():
     if "username" not in session:
         if not request.is_json:
             return errormessage("JSON not found!")
-        username = request.json.get("username", None)
+        username = request.json.get("Username", None)
         if username is None:
             return errormessage("Username not provided!")
         if Users.query.filter_by(username=username).count():
             return errormessage("Username already exists")
-        password = generate_password_hash(request.json.get("password"))
-        counterid = request.json.get("counterid")
-        email = request.json.get("email")
-        user = Users(username=username, password=password, counterid=counterid, email=email)
+        password = generate_password_hash(request.json.get("Password"))
+        counterid = request.json.get("CounterId")
+        contact = request.json.get("Contact")
+        user = Users(username=username, password=password, counterid=counterid, contact=contact)
         db.session.add(user)
         db.session.commit()
     return successmessage("Successfully registered")
@@ -83,10 +87,10 @@ def logout():
         return "Successfully logged in!"
 
 
-@app.route('/api/updateseat', methods=['POST'])
+@app.route('/updateseat', methods=['POST'])
 def updateseat():
-    #    if "username" not in session:
-    #        return "Please login first"
+    if "username" not in session:
+        return errormessage("Please login first")
     if not request.is_json:
         return errormessage("The requested method is not of JSON type.")
     busid = int(request.json.get("BusId"))
@@ -96,17 +100,18 @@ def updateseat():
     if customername is None or seats is None or contact is None:
         return errormessage("Incomplete info provided!")
     for seatid in seats:
-        seat = data['Counter1'][busid]['Seats'][seatid]
-        seat.CustomerName = customername
-        seat.Contact = contact
-        seat.isPacked = True
+        print(f'"{seatid}"')
+        seat = data['Counter1'][busid]['Seats'][int(seatid[-1])-1]
+        seat["CustomerName"] = customername
+        seat["Contact"] = contact
+        seat["isPacked"] = True
     with open('buses.json', 'w') as outfile:
         json.dump(data, outfile)
     ''' The following code works fluently in database but database migration is remaining so commented out!!'''
     # customer = CustomerInfo(name=customername, contact=contact, seats=seats, busid=busid)
     # db.session.add(customer)
     # db.session.commit()
-    return jsonify(mesasge="success", info="Data updated successfully")
+    return successmessage("Data updated successfully")
 
 
 # @socketio.on("update json")
