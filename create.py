@@ -3,7 +3,6 @@ from models import *
 from os import environ
 
 app = Flask(__name__)
-# "postgresql://maverick:1q2w3e@localhost/smartserver"
 app.config['SQLALCHEMY_DATABASE_URI'] = environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)

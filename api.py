@@ -1,6 +1,6 @@
 import json
 from create import *
-from flask import jsonify, request, session
+from flask import jsonify, request, session, abort
 from flask_session import Session
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -16,11 +16,16 @@ filename = "buses.json"
 with open(filename, 'r') as outfile:
     data = json.loads(outfile.read())  # converts json to dict
 
+
 # def notfound(errortype="busid not found"):
 #     return jsonify(message="failure", info=errortype)
 
 def errormessage(info="Error occurred!!"):
     return jsonify(message="failure", info=info)
+
+def successmessage(info="Successfully done!!"):
+    return jsonify(message="success", info=info)
+
 
 @app.route('/api', methods=['GET'])
 def api():
@@ -32,38 +37,39 @@ def api():
 
 @app.route('/login', methods=['POST'])
 def login():
-    if not request.is_json:
-        return "JSON not found!!"
-    username = request.json.get("username", None)
-    if username is None:
-        return "error"
-    userinfo = Users.query.filter_by(username=username).one_or_none()
-    if userinfo is None:
-        return "User not registered"
-    password = request.json.get("password", None)
-    if check_password_hash(userinfo.password, password):
-        return "Password doesn't match"
-    session["username"] = username
-    return "Logged in successfully!!"
+    if username not in session:
+        if not request.is_json:
+            return errormessage("JSON not found!!")
+        username = request.json.get("username", None)
+        if username is None:
+            return errormessage("Username not provided!")
+        userinfo = Users.query.filter_by(username=username).one_or_none()
+        if userinfo is None:
+            return errormessage("User not registered")
+        password = request.json.get("password", None)
+        if check_password_hash(userinfo.password, password):
+            return errormessage("Password doesn't match")
+        session["username"] = username
+    return successmessage("Logged in successfully!!")
 
 
 @app.route('/register', methods=['POST'])
 def register():
     if "username" not in session:
         if not request.is_json:
-            return "JSON not found!"
+            return errormessage("JSON not found!")
         username = request.json.get("username", None)
         if username is None:
-            return "error"
+            return errormessage("Username not provided!")
         if Users.query.filter_by(username=username).count():
-            return "Username already exists"
+            return errormessage("Username already exists")
         password = generate_password_hash(request.json.get("password"))
         counterid = request.json.get("counterid")
         email = request.json.get("email")
         user = Users(username=username, password=password, counterid=counterid, email=email)
         db.session.add(user)
         db.session.commit()
-    return "Success!!"
+    return successmessage("Successfully registered")
 
 
 @app.route('/logout')
@@ -78,15 +84,15 @@ def logout():
 
 @app.route('/api/updateseat', methods=['POST'])
 def updateseat():
-#    if "username" not in session:
-#        return "Please login first"
+    #    if "username" not in session:
+    #        return "Please login first"
     if not request.is_json:
-        return jsonify(message="failure", info="The requested method is not of JSON type.")
+        return errormessage("The requested method is not of JSON type.")
     busid = int(request.json.get("BusId"))
     customername = request.json.get("CustomerName", None)
     contact = request.json.get("Contact", None)
     seats = request.json.get("Seats", None)
-    if customername is None or seats is None or contact is None :
+    if customername is None or seats is None or contact is None:
         return errormessage("Incomplete info provided!")
     for seatid in seats:
         seat = data['Counter1'][busid]['Seats'][seatid]
@@ -96,6 +102,7 @@ def updateseat():
     with open('buses.json', 'w') as outfile:
         json.dump(data, outfile)
     return jsonify(mesasge="success", info="Data updated successfully")
+
 
 # @socketio.on("update json")
 # def updatejson():
