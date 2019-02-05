@@ -35,6 +35,46 @@ def api():
     # if 'busid' in request.args:
     #     busid = int(request.args['busid'])
     #     return jsonify(data["Counter1"][busid])
+    # busCounters= {}
+    # counterInfo = []
+    
+    # buses = Buses.query.all()
+    # customerInfo = CustomerInfo.query.all()
+    # for bus in buses:
+    #     busSource = Counters.query.filter_by(id=bus.sourceid).one()
+    #     busDestination = Counters.query.filter_by(id=bus.destinationid).one()
+    #     BusDetails = {}
+    #     BusDetails["BusNumber"] = bus.busnumber
+    #     BusDetails["DepartureTime"] = bus.departuretime
+    #     BusDetails["BusSource"] = busSource.name
+    #     BusDetails["BusDestination"] = busDestination.name
+    #     seats = []
+        
+    #     for seat in bus.seats:
+    #         # customer.seats = ''.join(map(str, customer.seats))
+            #   The code below doesnot work properly
+            # seatsInfo = {}
+            # for customer in customerInfo:
+                
+            #     seatsInfo["isPacked"] = False
+            #     seatsInfo["CustomerName"] = ""
+            #     seatsInfo["contact"] = 0
+            #     for customerSeat in customer.seats:
+            #         if seat == customerSeat and customer.busid == bus.id:
+            #             seatsInfo["isPacked"] = True
+            #             seatsInfo["CustomerName"] = customer.name
+            #             seatsInfo["contact"] = customer.contact
+            #   Upto here......
+    #         seatsInfo["seatName"] = seat
+    #         seats.append(seatsInfo)
+    #     BusDetails["Seats"] = seats
+    #     counterInfo.append(BusDetails)        
+    # busCounters["Counter1"] = counterInfo 
+    #this is done this way as we only have one counter as for now
+    #the json structure must be altered a bit differently if more counters are added
+
+
+
     return jsonify(data)
 
 
@@ -74,7 +114,8 @@ def register():
         user = Users(username=username, password=password, counterid=counterid, contact=contact)
         db.session.add(user)
         db.session.commit()
-    return successmessage("Successfully registered")
+        return successmessage("Successfully registered")
+    return "You are already logged in! Please log out first to register a new user."
 
 
 @app.route('/logout')
@@ -84,7 +125,7 @@ def logout():
     except KeyError:
         return "Not logged it yet!"
     finally:
-        return "Successfully logged in!"
+        return "Successfully logged out!"
 
 
 @app.route('/updateseat', methods=['POST'])
