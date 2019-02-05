@@ -32,6 +32,8 @@ def successmessage(info="Successfully done!!"):
 
 @app.route('/api', methods=['GET'])
 def api():
+
+    # NOTE: Don't delete the commented code below
     # if 'busid' in request.args:
     #     busid = int(request.args['busid'])
     #     return jsonify(data["Counter1"][busid])
