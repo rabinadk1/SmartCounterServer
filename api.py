@@ -39,47 +39,50 @@ def api():
     # if 'busid' in request.args:
     #     busid = int(request.args['busid'])
     #     return jsonify(data["Counter1"][busid])
-    busCounters= {}
-    counterInfo = []
+    if "username" in session:
+        busCounters= {}
+        counterInfo = []
 
-    # counterid = session["counterid"]
-    buses = Buses.query.all()
-    busesid = []
-    for bus in buses:
-        busesid.append(bus.id)
-    customerinfo = CustomerInfo.query.all()
-   
-    for bus in buses:
-        busSource = Counters.query.filter_by(id=bus.sourceid).one()
-        busDestination = Counters.query.filter_by(id=bus.destinationid).one()
-        BusDetails = {}
-        BusDetails["BusNumber"] = bus.busnumber
-        BusDetails["DepartureTime"] = bus.departuretime
-        BusDetails["BusSource"] = busSource.name
-        BusDetails["BusDestination"] = busDestination.name
-        seats = []
+        # counterid = session["counterid"]
+        buses = Buses.query.all()
+        busesid = []
+        for bus in buses:
+            busesid.append(bus.id)
+        customerinfo = CustomerInfo.query.all()
+    
+        for bus in buses:
+            busSource = Counters.query.filter_by(id=bus.sourceid).one()
+            busDestination = Counters.query.filter_by(id=bus.destinationid).one()
+            BusDetails = {}
+            BusDetails["BusNumber"] = bus.busnumber
+            BusDetails["DepartureTime"] = bus.departuretime
+            BusDetails["BusSource"] = busSource.name
+            BusDetails["BusDestination"] = busDestination.name
+            seats = []
 
-        for seat in bus.seats:
-            seatsInfo = {}
-            seatsInfo["isPacked"] = False
-            seatsInfo["CustomerName"] = ""
-            seatsInfo["contact"] = 0
-            seatsInfo["seatName"] = seat
-            for customer in customerinfo:
-                for seatno in customer.seats:
-                    if(seatno == seat and customer.busid == bus.id):
-                        seatsInfo["isPacked"] = True
-                        seatsInfo["CustomerName"] = customer.name
-                        seatsInfo["contact"] = customer.contact
+            for seat in bus.seats:
+                seatsInfo = {}
+                seatsInfo["isPacked"] = False
+                seatsInfo["CustomerName"] = ""
+                seatsInfo["contact"] = 0
+                seatsInfo["seatName"] = seat
+                for customer in customerinfo:
+                    for seatno in customer.seats:
+                        if(seatno == seat and customer.busid == bus.id):
+                            seatsInfo["isPacked"] = True
+                            seatsInfo["CustomerName"] = customer.name
+                            seatsInfo["contact"] = customer.contact
 
-            seats.append(seatsInfo)
-        BusDetails["Seats"] = seats
-        counterInfo.append(BusDetails)        
-    busCounters["Counter1"] = counterInfo 
-    # this is done this way as we only have one counter as for now
-    # the json structure must be altered a bit differently if more counters are added
+                seats.append(seatsInfo)
+            BusDetails["Seats"] = seats
+            counterInfo.append(BusDetails)        
+        busCounters["Counter1"] = counterInfo 
+        # this is done this way as we only have one counter as for now
+        # the json structure must be altered a bit differently if more counters are added
 
-    return jsonify(busCounters)
+        return jsonify(busCounters)
+    
+    return errormessage("Please login first!")
 
 
 @app.route('/login', methods=['POST'])
