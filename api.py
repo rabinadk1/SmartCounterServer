@@ -16,7 +16,7 @@ filename = "buses.json"
 with open(filename, 'r') as outfile:
     data = json.loads(outfile.read())  # converts json to dict
 
-session = {}
+session = {"admin": False}
 
 
 # def notfound(errortype="busid not found"):
@@ -39,49 +39,39 @@ def api():
     # if 'busid' in request.args:
     #     busid = int(request.args['busid'])
     #     return jsonify(data["Counter1"][busid])
-    if "username" in session:
-        busCounters= {}
+    if "username" not in session:
+        busCounters = {}
         counterInfo = []
-
-        # counterid = session["counterid"]
-        buses = Buses.query.all()
+        counterid = session["counterid"]
+        # counterid = 2
+        buses = Buses.query.filter((Buses.sourceid == counterid) | (Buses.destinationid == counterid)).all()
         busesid = []
         for bus in buses:
             busesid.append(bus.id)
-        customerinfo = CustomerInfo.query.all()
-    
+        customerinfo = CustomerInfo.query.filter(CustomerInfo.busid.in_(busesid)).all()
         for bus in buses:
-            busSource = Counters.query.filter_by(id=bus.sourceid).one()
-            busDestination = Counters.query.filter_by(id=bus.destinationid).one()
-            BusDetails = {}
-            BusDetails["BusNumber"] = bus.busnumber
-            BusDetails["DepartureTime"] = bus.departuretime
-            BusDetails["BusSource"] = busSource.name
-            BusDetails["BusDestination"] = busDestination.name
+            busSource = Counters.query.get(bus.sourceid)
+            busDestination = Counters.query.get(bus.destinationid)
+            BusDetails = {"BusNumber": bus.busnumber, "DepartureTime": bus.departuretime, "BusSource": busSource.name,
+                          "BusDestination": busDestination.name}
             seats = []
 
             for seat in bus.seats:
-                seatsInfo = {}
-                seatsInfo["isPacked"] = False
-                seatsInfo["CustomerName"] = ""
-                seatsInfo["contact"] = 0
-                seatsInfo["seatName"] = seat
+                seatsInfo = {"isPacked": False, "CustomerName": "", "contact": 0, "seatName": seat}
                 for customer in customerinfo:
                     for seatno in customer.seats:
-                        if(seatno == seat and customer.busid == bus.id):
+                        if seatno == seat:
                             seatsInfo["isPacked"] = True
                             seatsInfo["CustomerName"] = customer.name
                             seatsInfo["contact"] = customer.contact
-
                 seats.append(seatsInfo)
             BusDetails["Seats"] = seats
-            counterInfo.append(BusDetails)        
-        busCounters["Counter1"] = counterInfo 
+            counterInfo.append(BusDetails)
+        busCounters["Counter"] = counterInfo
         # this is done this way as we only have one counter as for now
         # the json structure must be altered a bit differently if more counters are added
-
         return jsonify(busCounters)
-    
+
     return errormessage("Please login first!")
 
 
@@ -101,7 +91,6 @@ def login():
             return errormessage("Password doesn't match")
         session["username"] = username
         session["counterid"] = userinfo.counterid
-        print("K xa topper?")
     return successmessage("Logged in successfully!!")
 
 
@@ -190,5 +179,5 @@ def updateseat():
 
 if __name__ == "__main__":
     # Bind to PORT if defined, otherwise default to 5000.
-    port = int(environ.get('PORT', 4000))
+    port = int(environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
