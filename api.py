@@ -111,8 +111,8 @@ def login():
     return successmessage("Logged in successfully!!")
 
 
-@app.route('/admin/register', methods=['POST'])
-def register():
+@app.route('/admin/adduser', methods=['POST'])
+def adduser():
     if session["admin"]:
         if not request.is_json:
             return errormessage("JSON not found!")
@@ -121,22 +121,24 @@ def register():
             return errormessage("Username not provided!")
         if Users.query.filter_by(username=username).count():
             return errormessage("Username already exists")
-        password = generate_password_hash(request.json.get("Password"))
-        counterid = request.json.get("CounterId")
-        contact = request.json.get("Contact")
-        user = Users(username=username, password=password, counterid=counterid, contact=contact)
+        password = request.json.get("Password", None)
+        counterid = request.json.get("CounterId", None)
+        contact = request.json.get("Contact", None)
+        if not (password and counterid and contact):
+            return errormessage("Incomplete info provided!")
+        user = Users(username=username, password=generate_password_hash(password), counterid=counterid, contact=contact)
         db.session.add(user)
         db.session.commit()
         return successmessage("Successfully registered!")
     return errormessage("Operation not permitted!")
 
 
-@app.route('/logout', )
-def logout():
-    if "username" not in session:
-        return errormessage("Not logged in yet!")
-    session = {"admin": False}
-    return "Successfully logged out!"
+# @app.route('/logout', methods=['GET'])
+# def logout():
+#     if "username" not in session:
+#         return errormessage("Not logged in yet!")
+#     session = {"admin": False}
+#     return "Successfully logged out!"
 
 
 @app.route('/updateseat', methods=['POST'])
@@ -186,9 +188,75 @@ def loginadmin():
 
 @app.route('/admin/addbus', methods=['POST'])
 def addbus():
-    if not session["admin"]:
-        return errormessage("Operation not permitted!")
-    return successmessage("Added bus successfully!!")
+    if session["admin"]:
+        if not request.is_json:
+            return errormessage("The requested method is not of JSON type.")
+        busnumber = request.json.get("BusNumber", None)
+        source = request.json.get("Source", None)
+        destination = request.json.get("Destination", None)
+        seats = request.json.get("Seats", None)
+        departuretime = request.json.get("DepartureTime", None)
+        if not (busnumber and source and destination and seats and departuretime):
+            return errormessage("Incomplete info provided!")
+        sourceid = Counters.query.filter_by(name=source).one_or_none()
+        destinationid = Counters.query.filter_by(name=destination).one_or_none()
+        if not (sourceid and destinationid):
+            return errormessage("Invalid source or destination!")
+        sourceid = sourceid.id
+        destinationid = destinationid.id
+        bus = Buses(busnumber=busnumber, sourceid=sourceid, destinationid=destinationid, seats=seats,
+                    departuretime=departuretime)
+        db.session.add(bus)
+        db.session.commit()
+        return successmessage("Added bus successfully!!")
+    return errormessage("Operation not permitted!")
+
+
+@app.route('/admin/updatebus', methods=['POST'])
+def updatebus():
+    if session["admin"]:
+        if not request.is_json:
+            return errormessage("The requested method is not of JSON type.")
+        busnumber = request.json.get("BusNumber", None)
+        source = request.json.get("Source", None)
+        destination = request.json.get("Destination", None)
+        departuretime = request.json.get("DepartureTime", None)
+        if not (busnumber and (source or destination or departuretime)):
+            return errormessage("Incomplete info provided!")
+        bus = Buses.query.filter_by(busnumber=busnumber).one_or_none()
+        if bus is None:
+            return errormessage("Invalid BusNumber!")
+        if source:
+            sourceid = Counters.query.filter_by(name=source).one_or_none()
+            if sourceid is None:
+                return errormessage("Invalid Source!")
+            bus.sourceid = sourceid.id
+        if destination:
+            destinationid = Counters.query.filter_by(name=destination).one_or_none()
+            if destinationid is None:
+                return errormessage("Invalid Destination!")
+            bus.destinationid = destinationid.id
+        if departuretime:
+            bus.departuretime = departuretime
+        db.session.commit()
+        return successmessage("Updated bus successfully!!")
+    return errormessage("Operation not permitted!")
+
+
+@app.route('/admin/addcounter', methods=['POST'])
+def addcounter():
+    if session["admin"]:
+        if not request.is_json:
+            return errormessage("JSON not found!!")
+        countername = request.json.get("CounterName", None)
+        counteraddress = request.json.get("CounterAddress", None)
+        if not (countername and counteraddress):
+            return errormessage("Information incomplete!")
+        counter = Counters(name=countername, address=counteraddress)
+        db.session.add(counter)
+        db.session.commit()
+        return successmessage("Data added successfully!")
+    return errormessage("Operation not permitted!")
 
 
 # @socketio.on("update json")
