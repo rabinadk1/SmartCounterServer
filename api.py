@@ -32,7 +32,7 @@ def successmessage(info="Successfully done!!"):
     return jsonify(message="success", info=info)
 
 
-@app.route('/api', methods=['GET'])
+@app.route('/api', methods=['GET', 'POST'])
 def api():
     # if "username" not in session:
     #     return errormessage("Please login first!")
@@ -41,10 +41,22 @@ def api():
     # if 'busid' in request.args:
     #     busid = int(request.args['busid'])
     #     return jsonify(data["Counter1"][busid])
+    counterid = []
+    if request.method == "POST" and session["admin"]:
+        if not request.is_json:
+            return errormessage("JSON not found!!")
+        countername = request.json.get("CounterName", None)
+        if not username:
+            return errormessage("Counter Name not provided!")
+        counterid = Counters.query.filter_by(name=countername).one_or_none()
+        if counterid is None:
+            return errormessage("Invalid countername!")
+        counterid = counterid.id
     if "username" in session:
         busCounters = {}
         counterInfo = []
-        counterid = session["counterid"]
+        if not counterid:
+            counterid = session["counterid"]
         # counterid = 1
         buses = Buses.query.filter((Buses.sourceid == counterid) | (Buses.destinationid == counterid)).all()
         busesid = []
@@ -122,11 +134,14 @@ def adduser():
         if Users.query.filter_by(username=username).count():
             return errormessage("Username already exists")
         password = request.json.get("Password", None)
-        counterid = request.json.get("CounterId", None)
+        countername = request.json.get("CounterName", None)
         contact = request.json.get("Contact", None)
-        if not (password and counterid and contact):
+        if not (password and countername and contact):
             return errormessage("Incomplete info provided!")
-        user = Users(username=username, password=generate_password_hash(password), counterid=counterid, contact=contact)
+        counterid = Counters.query.filter_by(name=countername).one_or_none()
+        if counterid is None:
+            return errormessage("Invalid countername!")
+        user = Users(username=username, password=generate_password_hash(password),counterid=counterid, contact=contact)
         db.session.add(user)
         db.session.commit()
         return successmessage("Successfully registered!")
