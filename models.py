@@ -17,7 +17,7 @@ class Buses(db.Model):
     busnumber = db.Column(db.String, unique=True, nullable=False)
     sourceid = db.Column(db.Integer, db.ForeignKey("counters.id"), nullable=False)
     destinationid = db.Column(db.Integer, db.ForeignKey("counters.id"), nullable=False)
-    seats = db.Column(db.ARRAY(db.String, zero_indexes=True), nullable=False)
+    seats = db.Column(db.ARRAY(db.Integer, zero_indexes=True), nullable=False)
     departuretime = db.Column(db.String, nullable=False)
 
 
@@ -29,7 +29,7 @@ class CustomerInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     contact = db.Column(db.BigInteger, nullable=False)
-    seats = db.Column(db.ARRAY(db.String, zero_indexes=True), nullable=False)
+    seats = db.Column(db.ARRAY(db.Integer, zero_indexes=True), nullable=False)
     busid = db.Column(db.Integer, db.ForeignKey("buses.id"), nullable=False)
 
 
@@ -41,3 +41,11 @@ class Users(db.Model):
     contact = db.Column(db.BigInteger, nullable=False, unique=True)
     password = db.Column(db.String, nullable=False)
     counterid = db.Column(db.Integer, db.ForeignKey("counters.id"), nullable=False)
+
+
+class Admins(db.Model):
+    __tablename__ = "admins"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, nullable=False, unique=True)
+    contact = db.Column(db.BigInteger, nullable=False, unique=True)
+    password = db.Column(db.String, nullable=False)
