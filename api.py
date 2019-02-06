@@ -1,6 +1,6 @@
 import json
 from create import *
-from flask import jsonify, request, session, abort
+from flask import jsonify, request, session
 from flask_session import Session
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -32,16 +32,25 @@ def successmessage(info="Successfully done!!"):
 
 @app.route('/api', methods=['GET'])
 def api():
+    # if "username" not in session:
+    #     return errormessage("Please login first!")
 
     # NOTE: Don't delete the commented code below
     # if 'busid' in request.args:
     #     busid = int(request.args['busid'])
     #     return jsonify(data["Counter1"][busid])
-    # busCounters= {}
-    # counterInfo = []
-    
-    # buses = Buses.query.all()
-    # customerInfo = CustomerInfo.query.all()
+    busCounters= {}
+    counterInfo = []
+
+    # counterid = session["counterid"]
+    counterid = 1
+    buses = Buses.query.filter((Buses.sourceid==counterid) | (Buses.destinationid==counterid)).all()
+    busesid = []
+    for bus in buses:
+        busesid.append(bus.id)
+    customerinfo = CustomerInfo.query.filter(CustomerInfo.busid.in_(busesid)).all()
+    # for i in buses:
+    #     print(i)
     # for bus in buses:
     #     busSource = Counters.query.filter_by(id=bus.sourceid).one()
     #     busDestination = Counters.query.filter_by(id=bus.destinationid).one()
@@ -51,31 +60,29 @@ def api():
     #     BusDetails["BusSource"] = busSource.name
     #     BusDetails["BusDestination"] = busDestination.name
     #     seats = []
-        
+
     #     for seat in bus.seats:
     #         # customer.seats = ''.join(map(str, customer.seats))
-            #   The code below doesnot work properly
-            # seatsInfo = {}
-            # for customer in customerInfo:
-                
-            #     seatsInfo["isPacked"] = False
-            #     seatsInfo["CustomerName"] = ""
-            #     seatsInfo["contact"] = 0
-            #     for customerSeat in customer.seats:
-            #         if seat == customerSeat and customer.busid == bus.id:
-            #             seatsInfo["isPacked"] = True
-            #             seatsInfo["CustomerName"] = customer.name
-            #             seatsInfo["contact"] = customer.contact
-            #   Upto here......
+    #   The code below doesnot work properly
+    # seatsInfo = {}
+    # for customer in customerInfo:
+
+    #     seatsInfo["isPacked"] = False
+    #     seatsInfo["CustomerName"] = ""
+    #     seatsInfo["contact"] = 0
+    #     for customerSeat in customer.seats:
+    #         if seat == customerSeat and customer.busid == bus.id:
+    #             seatsInfo["isPacked"] = True
+    #             seatsInfo["CustomerName"] = customer.name
+    #             seatsInfo["contact"] = customer.contact
+    #   Upto here......
     #         seatsInfo["seatName"] = seat
     #         seats.append(seatsInfo)
     #     BusDetails["Seats"] = seats
     #     counterInfo.append(BusDetails)        
     # busCounters["Counter1"] = counterInfo 
-    #this is done this way as we only have one counter as for now
-    #the json structure must be altered a bit differently if more counters are added
-
-
+    # this is done this way as we only have one counter as for now
+    # the json structure must be altered a bit differently if more counters are added
 
     return jsonify(data)
 
@@ -144,7 +151,7 @@ def updateseat():
         return errormessage("Incomplete info provided!")
     for seatid in seats:
         print(f'"{seatid}"')
-        seat = data['Counter1'][busid]['Seats'][int(seatid[-1])-1]
+        seat = data['Counter1'][busid]['Seats'][int(seatid[-1]) - 1]
         seat["CustomerName"] = customername
         seat["Contact"] = contact
         seat["isPacked"] = True
@@ -185,5 +192,5 @@ def updateseat():
 
 if __name__ == "__main__":
     # Bind to PORT if defined, otherwise default to 5000.
-    port = int(environ.get('PORT', 5000))
+    port = int(environ.get('PORT', 4000))
     app.run(host='0.0.0.0', port=port, debug=True)
